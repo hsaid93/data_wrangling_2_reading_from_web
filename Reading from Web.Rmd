@@ -1,0 +1,131 @@
+---
+title: "Reading data from the web"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+```{r}
+library(rvest)
+library(httr)
+```
+
+
+## Import NSDUH
+
+```{r}
+url = "https://www.samhsa.gov/data/sites/default/files/NSDUHsaeShortTermCHG2015/NSDUHsaeShortTermCHG2015.htm"
+
+drug_use_html = 
+  read_html(url)
+```
+
+
+Pull the tables out
+
+```{r}
+marj_df = 
+  drug_use_html |> 
+  html_table() |> 
+  first() |> 
+  slice(-1)
+
+marj_df
+```
+
+
+
+## import some Star Wars data
+
+pull in the html
+
+```{r}
+swm_html = 
+  read_html_live("https://www.imdb.com/list/ls070150896/")
+```
+
+Next up ... selector gadget
+
+```{r}
+swm_title_vec = 
+  swm_html |> 
+  html_elements(".ipc-title-link-wrapper .ipc-title__text") |> 
+  html_text()
+
+swm_metascore_vec = 
+  swm_html |> 
+  html_elements(".metacritic-score-box") |> 
+  html_text()
+
+swm_runtime_vec = 
+  swm_html |> 
+  html_elements(".base .ipc-inline-list__item:nth-child(2)") |> 
+  html_text()
+
+swm_df = 
+  tibble(
+    title = swm_title_vec,
+    score = swm_metascore_vec,
+    runtime = swm_runtime_vec
+  )
+  
+```
+
+
+## Use APIs
+
+getting a csv
+
+```{r}
+nyc_water_df = 
+  GET("https://data.cityofnewyork.us/api/v3/views/ia2d-e54m/query.csv") |> 
+  content("parsed") |> 
+  select(year:per_capita_gallons_per_person_per_day)
+```
+
+get a json file
+
+```{r}
+nyc_water_json = 
+  GET("https://data.cityofnewyork.us/api/v3/views/ia2d-e54m/query.json")
+
+nyc_water_json |> 
+  content("text") |> 
+  jsonlite::fromJSON() |> 
+  as_tibble() |> 
+  select(year:per_capita_gallons_per_person_per_day) 
+```
+
+Look at some pokemon!
+
+```{r}
+pokemon_json = 
+  GET("https://pokeapi.co/api/v2/pokemon/1")
+
+
+pokemon_data = 
+  pokemon_json |> 
+  content()
+
+pokemon_data[["name"]]
+pokemon_data[["height"]]
+pokemon_data[["abilities"]]
+```
